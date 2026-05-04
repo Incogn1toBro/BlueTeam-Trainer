@@ -8,24 +8,9 @@ End-to-end build time: 60–90 minutes the first time, depending on download spe
 
 ## Architecture
 
-Three virtual machines, all on a host-only / isolated network:
-
-```
-┌──────────────────────────────┐     ┌────────────────────────────┐
-│  Analyst VM (Ubuntu 25.10)   │     │  Logging VM (Ubuntu 26)    │
-│  - Backend (FastAPI)         │     │  - Splunk container        │
-│  - Frontend (browser)        │◀──▶│  - Velociraptor container  │
-│  8 GB RAM, 40 GB disk        │     │  8 GB RAM, 60 GB disk      │
-└──────────────┬───────────────┘     └────────────┬───────────────┘
-               │ WinRM (5985)                     │ HEC (8088)
-               ▼                                  ▲
-        ┌──────────────────────┐                  │
-        │  Victim VM (Win 11)  │──── agent ───────┘
-        │  - Atomic Red Team   │     (8001)
-        │  - Velociraptor      │
-        │  4 GB RAM, 60 GB     │
-        └──────────────────────┘
-```
+<p align="center">
+  <img src="docs/images/architecture.svg" alt="Three-VM lab architecture" width="700"/>
+</p>
 
 The Analyst and Logging VMs can be the same machine if your hardware allows.
 
