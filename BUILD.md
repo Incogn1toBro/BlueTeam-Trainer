@@ -14,6 +14,10 @@ End-to-end build time: 60–90 minutes the first time, depending on download spe
 
 The Analyst and Logging VMs can be the same machine if your hardware allows.
 
+<p align="center">
+  <img src="docs/images/build-phases.svg" alt="Five-phase build sequence with time estimates" width="700"/>
+</p>
+
 ---
 
 ## Prerequisites
