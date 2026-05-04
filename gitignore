@@ -1,0 +1,57 @@
+# --- Secrets / local config ---
+backend/.env
+*.pem
+*.key
+*.p12
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/.venv/
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# --- Node / Vite ---
+node_modules/
+vite-project/dist/
+*.tsbuildinfo
+.npm/
+.eslintcache
+
+# --- Frontend vendor libs (downloaded by fetch-vendor) ---
+vendor/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*~
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- Local data / runtime ---
+*.log
+logs/
+backend/logs/
+splunk-data/
+velociraptor-data/
+
+# --- Build artifacts ---
+dist/
+build/
+out/
+
+# --- Local test scratch ---
+scratch/
+tmp/
