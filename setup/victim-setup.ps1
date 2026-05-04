@@ -432,20 +432,6 @@ Write-Host "    Without it, the platform's Velociraptor->Splunk pipeline cannot 
 # Done
 # ---------------------------------------------------------------------------
 
-# Discover a sensible-looking IPv4 address for the final message.
-# Excludes loopback (127.x), APIPA (169.254.x), and Hyper-V default-switch (172.x).
-$victimIP = try {
-    $candidates = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
-        Where-Object {
-            $_.IPAddress -notmatch '^(127\.|169\.254\.|172\.)' -and
-            $_.PrefixOrigin -ne 'WellKnown'
-        } |
-        Select-Object -ExpandProperty IPAddress
-    if ($candidates) { $candidates[0] } else { '<unable to detect - run ipconfig>' }
-} catch {
-    '<unable to detect - run ipconfig>'
-}
-
 Write-Host @"
 
   ####################################################
@@ -453,17 +439,6 @@ Write-Host @"
   #   SETUP COMPLETE                                 #
   #                                                  #
   ####################################################
-
-  Detected victim IP: $victimIP
-
-  Next steps:
-    1. Take a VM snapshot NOW (pre-detonation baseline)
-    2. From your analyst workstation, configure the backend .env:
-         VICTIM_HOST = $victimIP
-         VICTIM_USER = atomicuser
-         VICTIM_PASS = <the password you just set>
-    3. Start the backend: uvicorn main:app --host 0.0.0.0 --port 8000
-    4. Open the frontend, flip to Live Mode, and start detonating
 
   NOTE: Sysmon is NOT installed. Analysts will hunt with native Windows
   event channels (Security 4688, PowerShell/Operational 4104, etc.) -
