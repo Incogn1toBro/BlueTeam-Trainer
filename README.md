@@ -5,6 +5,13 @@
 </p>
 
 > A self-contained training platform for host countermeasure analysts to build fluency in **Splunk**, **Velociraptor** and **PowerShell** by detonating real ATT&CK techniques and hunting them with real tools.
+---
+
+## Architecture
+
+<p align="center">
+  <img src="docs/images/architecture.svg" alt="Three-VM lab architecture" width="700"/>
+</p>
 
 ---
 
