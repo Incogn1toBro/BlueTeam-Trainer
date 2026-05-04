@@ -1,6 +1,6 @@
 # Blue Team Trainer — Vite Build
 
-This is the alternative path for running the frontend if your analyst laptops can't run Python (used by the simpler `start-trainer.ps1` / `start-trainer.sh` launchers in the parent folder).
+This is the alternative path for running the frontend if your analyst laptops cannot run Python (used by the simpler `start-trainer.ps1` / `start-trainer.sh` launchers in the parent folder).
 
 The Vite production build is fully static — the resulting `dist/` folder works offline with no runtime dependencies. You can open `dist/index.html` directly in a browser, or serve it with any static file server.
 
@@ -9,7 +9,7 @@ The Vite production build is fully static — the resulting `dist/` folder works
 ### Once, on a build machine with internet
 
 ```bash
-cd vite-project
+cd ./BlueTeam-Trainer/vite-project
 npm install
 npm run build
 ```
@@ -24,7 +24,7 @@ Copy the `dist/` folder to each laptop. Either:
 - **Drop into any web server** the analyst already has (IIS, nginx, Apache, Caddy).
 - **One-liner serve** (any of these work — pick whichever language the laptop has):
   ```bash
-  cd dist
+  cd ./BlueTeam-Trainer/vite-project/dist
   python -m http.server 8080          # Python
   npx serve -p 8080                    # Node.js
   php -S 127.0.0.1:8080                # PHP
@@ -37,7 +37,7 @@ Then open `http://localhost:8080`.
 If you want to extend the trainer (add techniques, change the UI, etc.):
 
 ```bash
-cd vite-project
+cd ./BlueTeam-Trainer/vite-project
 npm install
 npm run dev
 ```
