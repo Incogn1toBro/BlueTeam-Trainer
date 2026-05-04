@@ -17,81 +17,59 @@ There are two ways to wire this up — pick one based on how Velociraptor is lic
 
 ## Option A: Server-side `Generic.Forensic.SplunkUpload` artifact (recommended)
 
-This is the cleanest option. Velociraptor's built-in `Generic.Forensic.SplunkUpload` artifact ships any other artifact's results to a Splunk HEC endpoint. You configure it once and from then on every collection automatically lands in Splunk.
+This is the cleanest option. Velociraptor's built-in `Splunk.Flows.Upload` artifact ships any other artifact's results to a Splunk HEC endpoint. You configure it once and from then on every collection automatically lands in Splunk.
 
-### Step 1 — Configure HEC on Splunk
+### Step 1 — Configure Splunk - index, HEC, token
 
-In the Splunk web UI:
+Open `http://<LOGGING_VM_IP>:8100`. Log in with `admin` and the password you set.
 
-1. **Settings → Data inputs → HTTP Event Collector**
-2. **Global Settings** (top right) → **All Tokens** = Enabled, **Default Source Type** = `_json`, **Default Index** = `velociraptor`. Save.
-3. Verify **port 8088** is in the listed ports. (Default is 8088.) If your Splunk runs in Docker, expose this port — see the docker-compose update below.
+**Create the index:**
 
-Then create the index and the token:
+- **Settings → Indexes → New Index**
+- Name: `velociraptor`
+- Save
 
-4. **Settings → Indexes → New Index** → name `velociraptor`, type `Events`. Save.
-5. **Settings → Data inputs → HTTP Event Collector → New Token**:
-   - **Name**: `velociraptor`
-   - **Source name override**: `velociraptor`
-   - **Description**: `Velociraptor artifact uploads`
-   - **Output Group**: leave default
-   - **Source type**: `_json`
-   - **Allowed indexes**: `velociraptor`
-   - **Default index**: `velociraptor`
-   - Click **Submit**
+**Configure HEC globally:**
 
-6. **Copy the token value** that's displayed — you need it in Step 3.
+- **Settings → Data Inputs → HTTP Event Collector → Global Settings**
+- All Tokens: **Enabled**
+- Default Source Type: `_json`
+- Default Index: `velociraptor`
+- HTTP Port Number: `8088`
+- Save
 
-### Step 2 — Update docker-compose to expose HEC port
+**Create the HEC token:**
 
-The default `setup/docker-compose.yml` doesn't publish 8088. Edit it:
+- **Settings → Data Inputs → HTTP Event Collector → New Token**
+- Name: `velociraptor`
+- Source name override: `velociraptor`
+- Description: `Velociraptor artifact uploads`
+- Click **Next**
+- Source type: `_json`
+- Allowed indexes: `velociraptor`
+- Default Index: `velociraptor`
+- Click **Review** → **Submit**
 
-```yaml
-services:
-  splunk:
-    image: splunk/splunk:9.3
-    container_name: bttrainer-splunk
-    ports:
-      - "8100:8000"
-      - "8189:8089"
-      - "9997:9997"
-      - "8088:8088"   # <-- ADD THIS LINE for HEC
-```
+**Copy the token value that appears on the next screen.** You won't see it in full again. Call this `<HEC_TOKEN>`.
 
-Then restart the stack:
-
-```bash
-cd setup/
-docker compose up -d
-```
-
-### Step 3 — Configure Velociraptor to use the HEC token
+### Step 2 — Configure Velociraptor to use the HEC token
 
 In the Velociraptor GUI:
 
 1. **Server Artifacts** (left sidebar) → search for `Generic.Forensic.SplunkUpload`
 2. Click it, then **Configure**
 3. Fill in:
-   - **URL**: `http://<your-splunk-host-ip>:8088/services/collector/event`
+   - **URL**: `http://<LOGGING_VM_IP>:8088/services/collector/event`
    - **Token**: the token you copied from Splunk
    - **Index**: `velociraptor`
    - **Verify_SSL**: false (lab only)
 4. **Launch** the artifact once against your server to verify it accepts the config
 
-### Step 4 — Wrap your collections
 
-When running an artifact in Velociraptor and you want it to land in Splunk, you have two patterns:
-
-**Pattern A — Post-process every hunt:** Use the **Post Process** tab in the hunt creation dialog and add `Generic.Forensic.SplunkUpload`. Every artifact collected in that hunt automatically forwards.
-
-**Pattern B — Server-side daemon (one-time setup):** In Velociraptor, create a server-side event-monitoring rule that watches for new collections and auto-forwards them. Server-Side Artifacts → `Server.Monitor.Health.Splunk` (or write your own VQL rule). More complex but fully hands-off after setup.
-
-**For training purposes, Pattern A is right** — analysts deliberately add the post-process step, which makes the "what am I shipping to Splunk?" question explicit.
-
-### Step 5 — Verify end-to-end
+### Step 3 — Verify end-to-end
 
 1. From the trainer, detonate **T1082-1** (`systeminfo` enumeration)
-2. In Velociraptor, run `Windows.System.Pslist` against your victim, with `Generic.Forensic.SplunkUpload` as a post-process step
+2. In Velociraptor, run `Windows.System.Pslist` against your victim
 3. In Splunk, search:
    ```
    index=velociraptor
@@ -130,7 +108,7 @@ Once the pipeline is in place, the hunt pack queries in the trainer that referen
 | `index=windows EventCode=4688 New_Process_Name="*cmd.exe"` | `index=velociraptor artifact="Windows.EventLogs.EvtxHunter" EventID=4688 NewProcessName="*cmd.exe"` |
 | `index=windows EventCode=4624 LogonType=10` | `index=velociraptor artifact="Windows.EventLogs.EvtxHunter" EventID=4624 LogonType=10` |
 
-The trainer's hunt packs haven't been auto-rewritten — the original Sysmon/Security index queries are still useful as references for what to hunt, and analysts learn more by translating them themselves to the actual telemetry available.
+The trainer's hunt packs have not been auto-rewritten — the original Sysmon/Security index queries are still useful as references for what to hunt and analysts learn more by translating them themselves to the actual telemetry available.
 
 **Recommended Velociraptor artifacts for each technique:**
 
@@ -148,9 +126,9 @@ The trainer's hunt packs haven't been auto-rewritten — the original Sysmon/Sec
 
 ## Troubleshooting
 
-### `Generic.Forensic.SplunkUpload` says "connection refused"
+### `Splunk.Flows.Upload` says "connection refused"
 
-Either the HEC port isn't published from Docker (see Step 2) or the URL in your Velociraptor config is wrong. Test with curl from the Velociraptor container/host:
+Either the HEC port is not published from Docker (see Step 2) or the URL in your Velociraptor config is wrong. Test with curl from the Velociraptor container/host:
 
 ```bash
 curl -k https://<splunk-ip>:8088/services/collector/event \
@@ -172,7 +150,7 @@ The token may be writing to a different index. Check the token's "Allowed indexe
 index=* sourcetype=_json | head 20
 ```
 
-### Velociraptor agent isn't connecting to the server
+### Velociraptor agent is not connecting to the server
 
 Different problem entirely — see the main README's troubleshooting section. Without an agent, no artifacts can run, so no events reach Splunk.
 
@@ -190,4 +168,4 @@ This pipeline mirrors real-world DFIR more than the old "auto-ingest everything"
 | Evidence lands in case management / SIEM for analysis | Velociraptor → HEC → Splunk |
 | Analyst writes detection from what they observed | Same |
 
-The deliberate "I have to choose what to collect" step is the most valuable training friction in this whole platform. Don't bypass it.
+The deliberate "I have to choose what to collect" step is the most valuable training friction in this whole platform. Do not bypass it.
