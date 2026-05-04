@@ -4,7 +4,7 @@ Thank you for the interest. This lab gets better when more people add to it.
 
 ## What is especially welcome
 
-- **More techniques.** The frontend's `TECHNIQUES` array in `blueteam-trainer.html` is straightforward to extend. Add an entry with `id`, `tactic`, `name`, `description`, `atomicTests`, `huntPack` and the `offlineCapable` / `prereqStage` flags. Match the shape of existing entries.
+- **More techniques.** The frontend's `TECHNIQUES` array in `blueteam-trainer.jsx` is straightforward to extend. Add an entry with `id`, `tactic`, `name`, `description`, `atomicTests`, `huntPack` and the `offlineCapable` / `prereqStage` flags. Match the shape of existing entries.
 - **Better hunt packs.** Real-world SPL queries you have used in investigations are gold here. Same for VQL artifacts and PowerShell live response one-liners.
 - **Scenario templates.** Realistic attack chains (insider threat, business email compromise, ransomware operator) make the platform more useful as training.
 - **Bug fixes and clarifications** in `BUILD.md`. If you build the lab and hit something the guide does not cover, that is worth a PR.
