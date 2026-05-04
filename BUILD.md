@@ -359,7 +359,10 @@ If this isn't off, atomics that drop tools to disk (Mimikatz, ProcDump, Rubeus) 
 ## 3.3 Clone the repo on the Victim
 
 ```powershell
-Invoke-WebRequest 'https://github.com/Incogn1toBro/BlueTeam-Trainer'
+Invoke-WebRequest 'https://github.com/Incogn1toBro/BlueTeam-Trainer/archive/refs/heads/main.zip' -OutFile './BlueTeam-Trainer.zip'
+Expand-Archive './BlueTeam-Trainer.zip' './'
+Rename-Item './BlueTeam-Trainer-main' './BlueTeam-Trainer'
+Remove-Item './BlueTeam-Trainer.zip'
 cd ./BlueTeam-Trainer\setup
 ```
 
