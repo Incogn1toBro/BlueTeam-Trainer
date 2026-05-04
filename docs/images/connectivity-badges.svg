@@ -1,0 +1,39 @@
+<svg width="100%" viewBox="0 0 680 280" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>Connectivity badge legend</title>
+  <desc>Three connectivity badges shown in the trainer UI. Offline in green, Staged in amber, Online in red.</desc>
+  <defs>
+    <style>
+      .t { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; fill: #2C2C2A; }
+      .ts { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; fill: #5F5E5A; }
+      .th { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; font-weight: 500; fill: #2C2C2A; }
+      @media (prefers-color-scheme: dark) {
+        .t, .th { fill: #F1EFE8; }
+        .ts { fill: #B4B2A9; }
+      }
+    </style>
+  </defs>
+
+  <text class="th" x="40" y="40">Connectivity badges</text>
+  <text class="ts" x="40" y="60">Each technique shows one of three badges indicating its network requirements</text>
+
+  <g>
+    <rect x="40" y="90" width="100" height="30" rx="6" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
+    <text class="th" x="90" y="108" text-anchor="middle" dominant-baseline="central" style="fill:#27500A">○ OFFLINE</text>
+  </g>
+  <text class="th" x="160" y="105" dominant-baseline="central">Works on a fully isolated victim</text>
+  <text class="ts" x="160" y="125" dominant-baseline="central">Local registry, file, process, scheduled task operations</text>
+
+  <g>
+    <rect x="40" y="155" width="100" height="30" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+    <text class="th" x="90" y="173" text-anchor="middle" dominant-baseline="central" style="fill:#633806">◐ STAGED</text>
+  </g>
+  <text class="th" x="160" y="170" dominant-baseline="central">Works offline if payloads are pre-staged</text>
+  <text class="ts" x="160" y="190" dominant-baseline="central">Run Check Prereqs with internet first, then snapshot</text>
+
+  <g>
+    <rect x="40" y="220" width="100" height="30" rx="6" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.5"/>
+    <text class="th" x="90" y="238" text-anchor="middle" dominant-baseline="central" style="fill:#791F1F">● ONLINE</text>
+  </g>
+  <text class="th" x="160" y="235" dominant-baseline="central">Requires internet at runtime</text>
+  <text class="ts" x="160" y="255" dominant-baseline="central">Phishing downloads, C2 beaconing, exfiltration to public endpoints</text>
+</svg>

@@ -1,0 +1,60 @@
+<svg width="100%" viewBox="0 0 680 280" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>Velociraptor to Splunk data flow</title>
+  <desc>Four-step pipeline: an analyst initiates a collection, the agent runs the artifact on the victim, Splunk Flows Upload forwards results to HEC, the data lands in the velociraptor index for hunting.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .t { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; fill: #2C2C2A; }
+      .ts { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; fill: #5F5E5A; }
+      .th { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; font-weight: 500; fill: #2C2C2A; }
+      .arr { stroke: #888780; stroke-width: 1.5; fill: none; }
+      @media (prefers-color-scheme: dark) {
+        .t, .th { fill: #F1EFE8; }
+        .ts { fill: #B4B2A9; }
+        .arr { stroke: #B4B2A9; }
+      }
+    </style>
+  </defs>
+
+  <text class="ts" x="80" y="32" text-anchor="middle">1. Collection</text>
+  <text class="ts" x="240" y="32" text-anchor="middle">2. Artifact runs</text>
+  <text class="ts" x="425" y="32" text-anchor="middle">3. Forward to HEC</text>
+  <text class="ts" x="605" y="32" text-anchor="middle">4. Index</text>
+
+  <g>
+    <rect x="20" y="50" width="120" height="70" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+    <text class="th" x="80" y="80" text-anchor="middle" dominant-baseline="central" style="fill:#0C447C">Analyst</text>
+    <text class="ts" x="80" y="100" text-anchor="middle" dominant-baseline="central" style="fill:#185FA5">New collection</text>
+  </g>
+
+  <g>
+    <rect x="180" y="50" width="120" height="70" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+    <text class="th" x="240" y="80" text-anchor="middle" dominant-baseline="central" style="fill:#712B13">Agent on victim</text>
+    <text class="ts" x="240" y="100" text-anchor="middle" dominant-baseline="central" style="fill:#993C1D">Runs VQL artifact</text>
+  </g>
+
+  <g>
+    <rect x="345" y="50" width="160" height="70" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+    <text class="th" x="425" y="80" text-anchor="middle" dominant-baseline="central" style="fill:#085041">Splunk.Flows.Upload</text>
+    <text class="ts" x="425" y="100" text-anchor="middle" dominant-baseline="central" style="fill:#0F6E56">POST to HEC :8088</text>
+  </g>
+
+  <g>
+    <rect x="545" y="50" width="120" height="70" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+    <text class="th" x="605" y="80" text-anchor="middle" dominant-baseline="central" style="fill:#3C3489">Splunk</text>
+    <text class="ts" x="605" y="100" text-anchor="middle" dominant-baseline="central" style="fill:#534AB7">index=velociraptor</text>
+  </g>
+
+  <line x1="142" y1="85" x2="178" y2="85" class="arr" marker-end="url(#arrow)"/>
+  <line x1="302" y1="85" x2="343" y2="85" class="arr" marker-end="url(#arrow)"/>
+  <line x1="507" y1="85" x2="543" y2="85" class="arr" marker-end="url(#arrow)"/>
+
+  <line stroke-dasharray="4 3" x1="605" y1="120" x2="605" y2="180" stroke="#888780" stroke-width="0.5" opacity="0.5"/>
+  <g>
+    <rect x="525" y="180" width="160" height="60" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+    <text class="th" x="605" y="206" text-anchor="middle" dominant-baseline="central" style="fill:#444441">Analyst hunts</text>
+    <text class="ts" x="605" y="224" text-anchor="middle" dominant-baseline="central" style="fill:#5F5E5A">SPL queries on the index</text>
+  </g>
+</svg>
