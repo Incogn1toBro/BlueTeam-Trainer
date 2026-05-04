@@ -31,7 +31,7 @@ cat <<EOF
 
   ####################################################
   #                                                  #
-  #   Blue Team Trainer - Local Server             #
+  #   Blue Team Trainer - Local Server               #
   #                                                  #
   ####################################################
 
