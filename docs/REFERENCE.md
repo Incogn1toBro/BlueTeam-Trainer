@@ -151,6 +151,10 @@ For a training rotation, snapshot-revert between analysts is best.
 
 ### Network access and the connectivity badges
 
+<p align="center">
+  <img src="images/connectivity-badges.svg" alt="Three connectivity badges: Offline, Staged, Online" width="600"/>
+</p>
+
 Each technique in the ATT&CK Browser shows one of three connectivity badges:
 
 | Badge | Meaning |
