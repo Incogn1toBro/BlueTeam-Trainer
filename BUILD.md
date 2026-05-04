@@ -363,6 +363,7 @@ cd ./BlueTeam-Trainer\setup
 In an **elevated PowerShell**:
 
 ```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
 .\victim-setup.ps1 -AtomicUserPassword '<VICTIM_PASS>' -DisableDefender
 ```
 
