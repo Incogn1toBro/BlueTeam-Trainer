@@ -23,7 +23,7 @@ The Analyst and Logging VMs can be the same machine if your hardware allows.
 Download these ahead of time:
 
 - **Windows 11 Enterprise** (evaluation): https://www.microsoft.com/en-us/evalcenter/evaluate-windows-11-enterprise
-- **Ubuntu 26 Desktop**: https://ubuntu.com/download/desktop
+- **Ubuntu 26 & 25.10 Desktop**: https://ubuntu.com/download/desktop
 - **This repository** — clone or download as zip
 
 Provision the VMs:
