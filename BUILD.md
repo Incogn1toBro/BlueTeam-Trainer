@@ -382,7 +382,26 @@ The script does:
 
 Takes about 3 minutes. Read the output: each step prints `[OK]` or `[!!]`.
 
-## 3.5 Add the velociraptor host entry
+## 3.5 Pre-stage atomic prerequisites (offline-prep)
+
+While the Victim still has internet, download all common payloads so the platform can run them later when isolated:
+
+```powershell
+Import-Module Invoke-AtomicRedTeam -Force
+
+Invoke-AtomicTest T1003.001 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
+Invoke-AtomicTest T1558.003 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
+Invoke-AtomicTest T1055.001 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
+Invoke-AtomicTest T1059.001 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
+```
+
+This downloads ProcDump, Mimikatz, Rubeus, and similar tools to `C:\AtomicRedTeam\ExternalPayloads`. After this, those tests will work even with no internet.
+
+## 3.6 Revoke internet access
+
+Revoke the virtual machine's internet access so it is only utilising the static host-only IP set during **3.1 Configure the network**
+
+## 3.7 Add the velociraptor host entry
 
 The Velociraptor agent connects to a host called `velociraptor`. We need to point that to the Logging VM.
 
@@ -398,7 +417,7 @@ For example: `192.168.244.10    velociraptor`
 
 4. Save
 
-## 3.6 Install the Velociraptor agent
+## 3.8 Install the Velociraptor agent
 
 Open `https://<LOGGING_VM_IP>:8889` in a browser. Accept the self-signed cert warning. Log in with `admin` and the password you set.
 
@@ -417,22 +436,7 @@ The service should be `Running`.
 
 In the Velociraptor GUI on the Logging VM (**Clients** tab), the Victim should appear within ~30 seconds.
 
-## 3.7 Pre-stage atomic prerequisites (offline-prep)
-
-While the Victim still has internet, download all common payloads so the platform can run them later when isolated:
-
-```powershell
-Import-Module Invoke-AtomicRedTeam -Force
-
-Invoke-AtomicTest T1003.001 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
-Invoke-AtomicTest T1558.003 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
-Invoke-AtomicTest T1055.001 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
-Invoke-AtomicTest T1059.001 -GetPrereqs -PathToAtomicsFolder C:\AtomicRedTeam\atomics
-```
-
-This downloads ProcDump, Mimikatz, Rubeus, and similar tools to `C:\AtomicRedTeam\ExternalPayloads`. After this, those tests will work even with no internet.
-
-## 3.8 Take a snapshot of the Victim VM
+## 3.9 Take a snapshot of the Victim VM
 
 In your hypervisor, snapshot the Victim **now**. Call it something like `clean-baseline`. This is your training baseline, revert here after execution of payloads.
 
