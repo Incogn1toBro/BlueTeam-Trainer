@@ -460,7 +460,7 @@ Open Velociraptor (`https://<LOGGING_VM_IP>:8889`).
    - **URL**: `http://<LOGGING_VM_IP>:8088/services/collector/event`
    - **token**: `<HEC_TOKEN>` from Phase 1.9
    - **index**: `velociraptor`
-   - **SkipVerify**: enabled (SSL disabled for HEC in this lab)
+   - **SkipVerify**: Leave as is (SSL disabled for HEC in this lab)
 7. Click **Launch**
 
 From now on, every collection you run in Velociraptor automatically forwards to Splunk.
