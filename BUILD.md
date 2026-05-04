@@ -422,10 +422,9 @@ For example: `192.168.244.10    velociraptor`
 Open `https://<LOGGING_VM_IP>:8889` in a browser. Accept the self-signed cert warning. Log in with `admin` and the password you set.
 
 1. Click **Server Artifacts** in the left sidebar
-2. Download the MSI file 
-3. Locate the `Server.Utils.CreateMSI` job previously run
-4. Click into the run, then the **Uploaded Files** tab before downloading the MSI file.
-5. Once the MSI file is downloaded, execute it on the Victim VM. 
+2. Locate the `Server.Utils.CreateMSI` job previously run
+3. Click into the run, then the **Uploaded Files** tab before downloading the MSI file.
+4. Once the MSI file is downloaded, execute it on the Victim VM. 
 
 To confirm the existence of the Velociraptor service run
 ```powershell
