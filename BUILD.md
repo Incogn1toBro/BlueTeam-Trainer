@@ -283,7 +283,7 @@ sudo chmod +x *.sh
 ## 2.2 Run the one-shot Ubuntu setup
 
 ```bash
-./setup-ubuntu.sh
+sudo ./setup-ubuntu.sh
 ```
 
 The script:
