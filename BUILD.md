@@ -89,7 +89,7 @@ You should see "Hello from Docker!" output. If you do, Docker is ready.
 ```bash
 sudo git clone https://github.com/Incogn1toBro/BlueTeam-Trainer
 cd ./BlueTeam-Trainer/setup
-nano docker-compose.yml
+sudo nano docker-compose.yml
 ```
 
 Search for `ChangeMe_StrongPass123!` (it appears twice, once for Splunk, once for Velociraptor) and replace with strong passwords. **Note both passwords down** — you'll need them in the next steps.
