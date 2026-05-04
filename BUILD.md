@@ -483,7 +483,7 @@ index=velociraptor
 
 You should see process listing data flowing in. **Do not move on until you see this.**
 
-If data is not appearing try checking in Splunk **Settings → Data Inputs → HTTP Event Collector → Global Settings** and confirming SSL is not ticked.
+If data is not appearing try checking **Settings → Data Inputs → HTTP Event Collector → Global Settings** in Splunk and confirming **SSL** is not ticked.
 
 ## 4.3 Snapshot the Logging VM
 
