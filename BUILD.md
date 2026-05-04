@@ -498,7 +498,7 @@ Once the pipeline is verified working, snapshot the Logging VM. Saves you re-doi
 Back on the Analyst VM:
 
 ```bash
-cd ~/BlueTeam-Trainer
+cd ~/Desktop/BlueTeam-Trainer
 ./run-all.sh
 ```
 
