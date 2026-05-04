@@ -11,16 +11,16 @@ End-to-end build time: 60–90 minutes the first time, depending on download spe
 Three virtual machines, all on a host-only / isolated network:
 
 ```
-┌──────────────────────────────┐    ┌────────────────────────────┐
-│  Analyst VM (Ubuntu 26)      │    │  Logging VM (Ubuntu 26)    │
-│  - Backend (FastAPI)         │    │  - Splunk container        │
+┌──────────────────────────────┐     ┌────────────────────────────┐
+│  Analyst VM (Ubuntu 25.10)   │     │  Logging VM (Ubuntu 26)    │
+│  - Backend (FastAPI)         │     │  - Splunk container        │
 │  - Frontend (browser)        │◀──▶│  - Velociraptor container  │
-│  8 GB RAM, 40 GB disk        │    │  8 GB RAM, 60 GB disk      │
-└──────────────┬───────────────┘    └────────────┬───────────────┘
-               │ WinRM (5985)                    │ HEC (8088)
-               ▼                                 ▲
-        ┌──────────────────────┐                 │
-        │  Victim VM (Win 11)  │──── agent ──────┘
+│  8 GB RAM, 40 GB disk        │     │  8 GB RAM, 60 GB disk      │
+└──────────────┬───────────────┘     └────────────┬───────────────┘
+               │ WinRM (5985)                     │ HEC (8088)
+               ▼                                  ▲
+        ┌──────────────────────┐                  │
+        │  Victim VM (Win 11)  │──── agent ───────┘
         │  - Atomic Red Team   │     (8001)
         │  - Velociraptor      │
         │  4 GB RAM, 60 GB     │
@@ -44,10 +44,10 @@ Provision the VMs:
 | VM | OS | RAM | Disk |
 |---|---|---|---|
 | Victim | Windows 11 Enterprise | 4 GB | 60 GB |
-| Analyst | Ubuntu 26 Desktop | 8 GB | 40 GB |
+| Analyst | Ubuntu 25.10 Desktop | 8 GB | 40 GB |
 | Logging | Ubuntu 26 Desktop | 8 GB | 60 GB |
 
-All three on a host-only or isolated network. The Victim needs **temporary internet access** during setup; you'll disconnect it later.
+All three on a host-only or isolated network. All VM's need **temporary internet access** during setup; you will disconnect them later.
 
 ---
 
@@ -100,8 +100,8 @@ You should see "Hello from Docker!" output. If you do, Docker is ready.
 ## 1.5 Clone the repo and edit container passwords
 
 ```bash
-git clone <your-repo-url>
-cd blueteam-trainer/setup
+sudo git clone https://github.com/Incogn1toBro/BlueTeam-Trainer
+cd ./BlueTeam-Trainer/setup
 nano docker-compose.yml
 ```
 
@@ -135,10 +135,9 @@ Open `https://<LOGGING_VM_IP>:8889` in a browser. Accept the self-signed cert wa
 1. Click **Server Artifacts** in the left sidebar
 2. Click **New Collection**
 3. Search for and select `Server.Utils.CreateMSI`
-4. Click **Launch** (top right) → **Launch** at the bottom of the dialog
+4. Click **Launch** at the bottom of the dialog
 5. Wait for it to complete (green tick)
-6. Click into the run, then the **Uploaded Files** tab
-7. **Download the `.msi`** — you'll deploy this to the Victim VM in Phase 3
+6. Click into the run, then the **Uploaded Files** tab to confirm the MSI file exists.
 
 ## 1.9 Configure Splunk — index, HEC, token
 
@@ -156,7 +155,8 @@ Open `http://<LOGGING_VM_IP>:8100`. Log in with `admin` and the password you set
 - All Tokens: **Enabled**
 - Default Source Type: `_json`
 - Default Index: `velociraptor`
-- HTTP Port Number: `8088`
+- HTTP Port Number: `8088
+- SSL: Disabled
 - Save
 
 **Create the HEC token:**
@@ -171,7 +171,7 @@ Open `http://<LOGGING_VM_IP>:8100`. Log in with `admin` and the password you set
 - Default Index: `velociraptor`
 - Click **Review** → **Submit**
 
-**Copy the token value that appears on the next screen.** You won't see it in full again. Call this `<HEC_TOKEN>`.
+**Copy the token value that appears on the next screen.** Call this `<HEC_TOKEN>`.
 
 ## 1.10 Verify HEC end-to-end
 
@@ -183,9 +183,9 @@ curl -k http://<LOGGING_VM_IP>:8088/services/collector/event \
   -d '{"event": "hec test from build guide"}'
 ```
 
-You should see `{"text":"Success","code":0}`. Then in Splunk: search `index=velociraptor` and you should see the test event.
+You should see `{"text":"Success","code":0}`.
 
-> ⚠️ **Do not move on until the curl test succeeds and the event appears in Splunk.** Every other phase depends on HEC working.
+> ⚠️ **Do not move on until the curl test succeeds.** Every other phase depends on HEC working.
 
 ## 1.11 Apply the Splunk config files for VQL ingestion
 
@@ -217,21 +217,52 @@ TRUNCATE = 512000
 
 Save and exit.
 
-Create `transforms.conf`:
+Create `transforms.conf` (copy from `setup/splunk/transforms.conf` in the repo)::
 
 ```bash
 sudo vi transforms.conf
 ```
 
-Paste in the contents of `setup/splunk/transforms.conf` from the repo (it's a long config block — easiest to copy it from there).
+Paste in:
+
+```
+[vql-sourcetype]
+INGEST_EVAL = sourcetype=lower(src_artifact)
+
+[vql-timestamp]
+INGEST_EVAL = _time=case( \
+              src_artifact="artifact_Linux_Search_FileFinder",strptime(CTime,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_System_VFS_ListDirectory",strptime(ctime,"%Y-%m-%dT%H:%M:%S.%NZ"), \
+              src_artifact="artifact_Windows_Timeline_MFT",strptime(event_time,"%Y-%m-%dT%H:%M:%S.%NZ"), \
+              src_artifact="artifact_Windows_NTFS_MFT",strptime(Created0x10,"%Y-%m-%dT%H:%M:%S.%NZ"), \
+              src_artifact="artifact_Windows_EventLogs_Evtx",strptime(TimeCreated,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Custom_Windows_EventLogs_System_7045",strptime(TimeCreated,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_EventLogs_RDPAuth",strptime(EventTime,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Analysis_EvidenceOfExecution_UserAssist",strptime(LastExecution,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Analysis_EvidenceOfExecution_Amcache",strptime(KeyMTime,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_System_Amcache_InventoryApplicationFile",strptime(LastModified,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Search_FileFinder",strptime(CTime,"%Y-%m-%dT%H:%M:%S.%NZ"), \
+              src_artifact="artifact_Windows_Applications_NirsoftBrowserViewer",strptime(Visited,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Registry_RecentDocs",strptime(LastWriteTime,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Forensics_UserAccessLogs_Clients",strptime(InsertDate,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Forensics_UserAccessLogs_DNS",strptime(LastSeen,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Forensics_UserAccessLogs_SystemIdentity",strptime(CreationTime,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Custom_Windows_Application_IIS_IISLogs",strptime(event_time,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_MacOS_Applications_Chrome_History",strptime(last_visit_time,"%Y-%m-%dT%H:%M:%SZ"), \
+              src_artifact="artifact_Windows_Registry_UserAssist",strptime(LastExecution,"%Y-%m-%dT%H:%M:%SZ") \
+              )
+```
 
 Exit the container:
 
 ```bash
 exit
 ```
+## 1.12 Revoke internet access
 
-## 1.12 Restart Splunk to pick up the config
+Revoke the virtual machine's internet access so it is only utilising the static host-only IP set during **1.7 Set a static IP for the Logging VM**
+
+## 1.13 Restart Splunk to pick up the config
 
 ```bash
 sudo docker compose down
@@ -241,7 +272,7 @@ sudo docker ps
 
 Wait for both containers to be healthy again.
 
-✅ **Phase 1 complete.** Logging stack is live, HEC is verified, VQL ingestion is configured.
+✅ **Phase 1 complete.** Logging stack is live, HEC is verified and VQL ingestion is configured.
 
 ---
 
@@ -252,8 +283,8 @@ This is where the Blue Team Trainer frontend and backend run.
 ## 2.1 Clone the repo
 
 ```bash
-git clone <your-repo-url>
-cd blueteam-trainer
+sudo git clone https://github.com/Incogn1toBro/BlueTeam-Trainer
+cd ./BlueTeam-Trainer
 sudo chmod +x *.sh
 ```
 
@@ -285,7 +316,11 @@ VICTIM_USER=atomicuser
 VICTIM_PASS=<the password you'll set in Phase 3>
 ```
 
-You don't have the Victim VM yet — that's Phase 3. Use planned values; you can update if anything changes.
+You don't have the Victim VM yet — that's Phase 3. Use planned values; you can update the .env file if anything changes.
+
+## 2.4 Revoke internet access
+
+Revoke the virtual machine's internet access so it is only utilising its host-only IP address
 
 > ⚠️ **Don't launch the platform yet.** Continue to Phase 3 first.
 
@@ -308,9 +343,9 @@ In Windows: **Settings → Network & Internet → Ethernet**
 
 **Note this IP — call it `<VICTIM_IP>`.** Update `backend/.env` on the Analyst VM if it differs from what you guessed.
 
-Make sure the Victim still has temporary internet access at this stage — the setup script downloads PowerShell modules.
+Make sure the Victim still has temporary internet access at this stage (the setup script downloads PowerShell modules).
 
-## 3.2 Disable Tamper Protection (manual GUI step — critical)
+## 3.2 Disable Tamper Protection (manual GUI step — CRITICAL)
 
 Microsoft does not allow scripted Tamper Protection disable. You **must** do this in the GUI before running the setup script.
 
@@ -324,18 +359,16 @@ If this isn't off, atomics that drop tools to disk (Mimikatz, ProcDump, Rubeus) 
 ## 3.3 Clone the repo on the Victim
 
 ```powershell
-git clone <your-repo-url>
-cd blueteam-trainer\setup
+Invoke-WebRequest 'https://github.com/Incogn1toBro/BlueTeam-Trainer'
+cd ./BlueTeam-Trainer\setup
 ```
-
-(If git isn't installed yet, just download the zip and extract it manually.)
 
 ## 3.4 Run the Victim setup script
 
 In an **elevated PowerShell**:
 
 ```powershell
-.\victim-setup.ps1 -AtomicUserPassword 'Password1!' -DisableDefender
+.\victim-setup.ps1 -AtomicUserPassword '<VICTIM_PASS>' -DisableDefender
 ```
 
 > The password you pass here **must match `VICTIM_PASS`** in `backend/.env` on the Analyst VM.
@@ -371,11 +404,16 @@ For example: `192.168.244.10    velociraptor`
 
 ## 3.6 Install the Velociraptor agent
 
-Copy the `.msi` you downloaded in Phase 1.8 to the Victim. Then:
+Open `https://<LOGGING_VM_IP>:8889` in a browser. Accept the self-signed cert warning. Log in with `admin` and the password you set.
 
+1. Click **Server Artifacts** in the left sidebar
+2. Download the MSI file 
+3. Locate the `Server.Utils.CreateMSI` job previously run
+4. Click into the run, then the **Uploaded Files** tab before downloading the MSI file.
+5. Once the MSI file is downloaded, execute it on the Victim VM. 
+
+To confirm the existence of the Velociraptor service run
 ```powershell
-msiexec /i C:\path\to\velociraptor-client.msi /quiet
-Start-Sleep -Seconds 5
 Get-Service Velociraptor
 ```
 
@@ -400,7 +438,7 @@ This downloads ProcDump, Mimikatz, Rubeus, and similar tools to `C:\AtomicRedTea
 
 ## 3.8 Take a snapshot of the Victim VM
 
-In your hypervisor, snapshot the Victim **now**. Call it something like `clean-baseline`. This is your training baseline — revert here regularly during real use.
+In your hypervisor, snapshot the Victim **now**. Call it something like `clean-baseline`. This is your training baseline, revert here after execution of payloads.
 
 ✅ **Phase 3 complete.** Victim is ready and snapshotted.
 
@@ -428,7 +466,7 @@ Open Velociraptor (`https://<LOGGING_VM_IP>:8889`).
 
 From now on, every collection you run in Velociraptor automatically forwards to Splunk.
 
-## 4.2 Smoke-test the pipeline
+## 4.2 Test the pipeline
 
 In Velociraptor:
 
@@ -459,13 +497,13 @@ Once the pipeline is verified working, snapshot the Logging VM. Saves you re-doi
 Back on the Analyst VM:
 
 ```bash
-cd ~/blueteam-trainer
+cd ~/BlueTeam-Trainer
 ./run-all.sh
 ```
 
 A tmux session opens with two panes — backend on top, frontend on the bottom. Your browser opens to `http://localhost:8080/blueteam-trainer.html`.
 
-## 5.1 Verify the backend can reach the Victim
+## 5.1 Verify the backend API can reach the Victim
 
 In Firefox: `http://localhost:8000/health`
 
@@ -519,7 +557,6 @@ That's the full loop: **detonate → collect → hunt**.
 | Tests detonate but Defender quarantines | Tamper Protection still on | Phase 3.2 — toggle off in Defender GUI, re-run script |
 | Backend reports `victim_reachable: false` | WinRM unreachable | `nc -zv <VICTIM_IP> 5985` — check firewall and WinRM service |
 | Velociraptor agent never appears | Hosts file or port wrong | Phase 3.5 — confirm `velociraptor` resolves; agent connects on 8001 |
-| HEC test event never lands in Splunk | HEC misconfigured | Phase 1.9 — "All Tokens" must be enabled; index must exist |
 | `Invoke-AtomicTest` not recognised | Module not in PSModulePath | Run `setup/fix-atomic-install.ps1` on the Victim |
 | Atomic test reports SUCCESS but actually failed | Internet-dependent test | Look for **● ONLINE** badge — these need internet to work |
 
@@ -532,7 +569,7 @@ When all else fails, run `python backend/diagnose.py` from the Analyst VM. It wa
 Just three things to remember:
 
 1. **Start the platform**: `./run-all.sh` on the Analyst VM
-2. **Revert the Victim** snapshot every 5–10 detonations to keep a clean baseline
+2. **Revert the Victim** snapshot after every detonation to keep a clean baseline
 3. **Detach from tmux** with `Ctrl+B D` — re-attach with `tmux attach -t bttrainer`
 
-That's it. Have fun training.
+That is it. Have fun training.
