@@ -1,5 +1,9 @@
 # Velociraptor → Splunk Pipeline Setup
 
+<p align="center">
+  <img src="../docs/images/velociraptor-splunk-pipeline.svg" alt="Pipeline data flow: analyst → agent → HEC → Splunk index" width="680"/>
+</p>
+
 This pipeline replaces the old "Splunk UF on the victim" approach with a more realistic DFIR workflow:
 
 > Analyst runs a Velociraptor artifact → Velociraptor server forwards the results to Splunk via HTTP Event Collector (HEC) → Analyst hunts what they collected.
