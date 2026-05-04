@@ -32,7 +32,7 @@ cat <<EOF
 
   ####################################################
   #                                                  #
-  #   Blue Team Trainer - Ubuntu Setup             #
+  #   Blue Team Trainer - Ubuntu Setup               #
   #                                                  #
   ####################################################
 EOF
