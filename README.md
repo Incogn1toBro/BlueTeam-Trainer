@@ -1,18 +1,10 @@
 # Blue Team Trainer
 
+<p align="center">
+  <img src="docs/images/hero-banner.svg" alt="Blue Team Trainer — Detonate, Collect, Hunt" width="700"/>
+</p>
+
 > A self-contained training platform for host countermeasure analysts to build fluency in **Splunk**, **Velociraptor** and **PowerShell** by detonating real ATT&CK techniques and hunting them with real tools.
-
-The training loop:
-
-```
-   ┌───────────┐     ┌─────────────┐     ┌─────────┐     ┌────────┐
-   │  Pick a   │ ──▶│  Detonate    │ ──▶│ Collect │ ──▶│  Hunt  │
-   │ technique │     │   atomic    │     │   in    │     │   in   │
-   │           │     │   test      │     │  Velo.  │     │ Splunk │
-   └───────────┘     └─────────────┘     └─────────┘     └────────┘
-```
-
-Real tools, real telemetry, real tradecraft, within a safe lab you can revert.
 
 ---
 
