@@ -180,6 +180,10 @@ Velociraptor data needs custom Splunk ingestion config so each artifact gets its
 
 ```bash
 sudo docker exec -it bttrainer-splunk bash
+```
+Change into the Splunk Local System directory.
+
+```bash
 cd $SPLUNK_HOME/etc/system/local
 ```
 
