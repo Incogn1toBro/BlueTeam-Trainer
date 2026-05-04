@@ -256,6 +256,7 @@ Revoke the virtual machine's internet access so it is only utilising the static 
 ## 1.13 Restart Splunk to pick up the config
 
 ```bash
+cd ./BlueTeam-Trainer/setup
 sudo docker compose down
 sudo docker compose up -d
 sudo docker ps
