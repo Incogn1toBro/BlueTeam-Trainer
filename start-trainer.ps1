@@ -51,7 +51,7 @@ Write-Host @"
 
   ####################################################
   #                                                  #
-  #   Blue Team Trainer - Local Server             #
+  #   Blue Team Trainer - Local Server               #
   #                                                  #
   ####################################################
 
