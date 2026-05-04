@@ -217,7 +217,7 @@ TRUNCATE = 512000
 
 Save and exit.
 
-Create `transforms.conf` (copy from `setup/splunk/transforms.conf` in the repo)::
+Create `transforms.conf` (copy from `setup/splunk/transforms.conf` in the repo):
 
 ```bash
 sudo vi transforms.conf
