@@ -1,0 +1,62 @@
+# Blue Team Trainer - Logging Stack
+#
+# Splunk (SIEM) + Velociraptor (DFIR) in one compose file.
+# Runs on a single Linux host with Docker. Spin up with:
+#
+#   sudo docker compose up -d
+#
+# Default credentials (CHANGE THESE BEFORE FIRST RUN):
+#   Splunk:         admin / ChangeMe_StrongPass123!
+#   Velociraptor:   admin / ChangeMe_StrongPass123!
+#
+# Exposed ports on the Docker host:
+#   8100  - Splunk Web UI       -> http://<host>:8100
+#   8189  - Splunk Management API
+#   8088  - Splunk HEC          -> for Velociraptor → Splunk uploads
+#   8889  - Velociraptor GUI    -> https://<host>:8889
+#   8001  - Velociraptor agent endpoint (clients connect here)
+
+services:
+  splunk:
+    image: splunk/splunk:9.3
+    container_name: bttrainer-splunk
+    hostname: bttrainer-splunk
+    environment:
+      SPLUNK_START_ARGS: "--accept-license"
+      SPLUNK_PASSWORD: "ChangeMe_StrongPass123!"
+      SPLUNK_STANDALONE_URL: "bttrainer-splunk"
+    ports:
+      - "8100:8000"   # Web UI
+      - "8189:8089"   # Management API
+      - "8088:8088"   # HTTP Event Collector (HEC) - for Velociraptor uploads
+    volumes:
+      - splunk-var:/opt/splunk/var
+      - splunk-etc:/opt/splunk/etc
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  velociraptor:
+    image: wlambert/velociraptor:latest
+    container_name: bttrainer-velociraptor
+    hostname: bttrainer-velociraptor
+    environment:
+      VELOX_USER: "admin"
+      VELOX_PASSWORD: "ChangeMe_StrongPass123!"
+      VELOX_ROLE: "administrator"
+      VELOX_SERVER_URL: "https://velociraptor:8001/"
+      VELOX_FRONTEND_HOSTNAME: "velociraptor"
+    ports:
+      - "8889:8889"   # GUI
+      - "8001:8001"   # Agent frontend - clients connect here on this port
+    volumes:
+      - velociraptor-data:/velociraptor
+    restart: unless-stopped
+
+volumes:
+  splunk-var:
+  splunk-etc:
+  velociraptor-data:
