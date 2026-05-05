@@ -264,6 +264,7 @@ You should see `{"text":"Success","code":0}`.
 
 > ⚠️ **Do not move on until the curl test succeeds.** Every other phase depends on HEC working.
 
+
 ✅ **Phase 1 complete.** Logging stack is live, HEC is verified and VQL ingestion is configured.
 
 ---
@@ -316,6 +317,7 @@ You don't have the Victim VM yet — that's Phase 3. Use planned values; you can
 Revoke the virtual machine's internet access so it is only utilising its host-only IP address
 
 > ⚠️ **Don't launch the platform yet.** Continue to Phase 3 first.
+
 
 ✅ **Phase 2 complete.** Analyst VM is ready, waiting on the Victim.
 
