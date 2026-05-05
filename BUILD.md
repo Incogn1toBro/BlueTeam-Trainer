@@ -457,7 +457,7 @@ Open Velociraptor (`https://<LOGGING_VM_IP>:8889`).
 1. **Server Events** in the left sidebar
 2. Click **Update Server Monitoring Table** (top right)
 3. Add **`Splunk.Flows.Upload`** to the list of monitored artifacts
-4. Click **Configure Parameters** at the top
+4. Click **Configure Parameters** at the bottom
 5. Click the spanner icon next to `Splunk.Flows.Upload`
 6. Fill in:
    - **URL**: `http://<LOGGING_VM_IP>:8088/services/collector/event`
