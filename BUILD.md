@@ -264,6 +264,18 @@ sudo docker ps
 
 Wait for both containers to be healthy again.
 
+## 1.14 Disable HEC Global SSL again
+
+Open `http://<LOGGING_VM_IP>:8100`. Log in with `admin` and the password you set.
+
+- **Settings → Data Inputs → HTTP Event Collector → Global Settings**
+- All Tokens: **Enabled**
+- Default Source Type: `_json`
+- Default Index: `velociraptor`
+- HTTP Port Number: `8088`
+- SSL: Disabled
+- Save
+
 ✅ **Phase 1 complete.** Logging stack is live, HEC is verified and VQL ingestion is configured.
 
 ---
