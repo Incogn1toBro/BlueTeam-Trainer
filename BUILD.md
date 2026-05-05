@@ -275,6 +275,7 @@ This is where the Blue Team Trainer frontend and backend run.
 ## 2.1 Clone the repo
 
 ```bash
+sudo apt install git
 sudo git clone https://github.com/Incogn1toBro/BlueTeam-Trainer
 cd ./BlueTeam-Trainer
 sudo chmod +x *.sh
