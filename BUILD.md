@@ -126,55 +126,7 @@ Open `https://<LOGGING_VM_IP>:8889` in a browser. Accept the self-signed cert wa
 5. Wait for it to complete (green tick)
 6. Click into the run, then the **Uploaded Files** tab to confirm the MSI file exists.
 
-## 1.9 Configure Splunk — index, HEC, token
-
-Open `http://<LOGGING_VM_IP>:8100`. Log in with `admin` and the password you set.
-
-**Create the index:**
-
-- **Settings → Indexes → New Index**
-- Name: `velociraptor`
-- Save
-
-**Configure HEC globally:**
-
-- **Settings → Data Inputs → HTTP Event Collector → Global Settings**
-- All Tokens: **Enabled**
-- Default Source Type: `_json`
-- Default Index: `velociraptor`
-- HTTP Port Number: `8088
-- SSL: Disabled
-- Save
-
-**Create the HEC token:**
-
-- **Settings → Data Inputs → HTTP Event Collector → New Token**
-- Name: `velociraptor`
-- Source name override: `velociraptor`
-- Description: `Velociraptor artifact uploads`
-- Click **Next**
-- Source type: `_json`
-- Allowed indexes: `velociraptor`
-- Default Index: `velociraptor`
-- Click **Review** → **Submit**
-
-**Copy the token value that appears on the next screen.** Call this `<HEC_TOKEN>`.
-
-## 1.10 Verify HEC end-to-end
-
-From any shell with curl:
-
-```bash
-curl -k http://<LOGGING_VM_IP>:8088/services/collector/event \
-  -H "Authorization: Splunk <HEC_TOKEN>" \
-  -d '{"event": "hec test from build guide"}'
-```
-
-You should see `{"text":"Success","code":0}`.
-
-> ⚠️ **Do not move on until the curl test succeeds.** Every other phase depends on HEC working.
-
-## 1.11 Apply the Splunk config files for VQL ingestion
+## 1.9 Apply the Splunk config files for VQL ingestion
 
 Velociraptor data needs custom Splunk ingestion config so each artifact gets its own sourcetype and the right timestamps are extracted.
 
@@ -249,11 +201,11 @@ Exit the container:
 ```bash
 exit
 ```
-## 1.12 Revoke internet access
+## 1.10 Revoke internet access
 
 Revoke the virtual machine's internet access so it is only utilising the static host-only IP set during **1.7 Set a static IP for the Logging VM**
 
-## 1.13 Restart Splunk to pick up the config
+## 1.11 Restart Splunk to pick up the config
 
 ```bash
 cd ./BlueTeam-Trainer/setup
@@ -264,17 +216,53 @@ sudo docker ps
 
 Wait for both containers to be healthy again.
 
-## 1.14 Disable HEC Global SSL again
+## 1.12 Configure Splunk — index, HEC, token
 
 Open `http://<LOGGING_VM_IP>:8100`. Log in with `admin` and the password you set.
+
+**Create the index:**
+
+- **Settings → Indexes → New Index**
+- Name: `velociraptor`
+- Save
+
+**Configure HEC globally:**
 
 - **Settings → Data Inputs → HTTP Event Collector → Global Settings**
 - All Tokens: **Enabled**
 - Default Source Type: `_json`
 - Default Index: `velociraptor`
-- HTTP Port Number: `8088`
+- HTTP Port Number: `8088
 - SSL: Disabled
 - Save
+
+**Create the HEC token:**
+
+- **Settings → Data Inputs → HTTP Event Collector → New Token**
+- Name: `velociraptor`
+- Source name override: `velociraptor`
+- Description: `Velociraptor artifact uploads`
+- Click **Next**
+- Source type: `_json`
+- Allowed indexes: `velociraptor`
+- Default Index: `velociraptor`
+- Click **Review** → **Submit**
+
+**Copy the token value that appears on the next screen.** Call this `<HEC_TOKEN>`.
+
+## 1.13 Verify HEC end-to-end
+
+From any shell with curl:
+
+```bash
+curl -k http://<LOGGING_VM_IP>:8088/services/collector/event \
+  -H "Authorization: Splunk <HEC_TOKEN>" \
+  -d '{"event": "hec test from build guide"}'
+```
+
+You should see `{"text":"Success","code":0}`.
+
+> ⚠️ **Do not move on until the curl test succeeds.** Every other phase depends on HEC working.
 
 ✅ **Phase 1 complete.** Logging stack is live, HEC is verified and VQL ingestion is configured.
 
