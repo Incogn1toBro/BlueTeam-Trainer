@@ -1,0 +1,320 @@
+{
+  "_comment": "Hand-curated overlay merged with upstream Atomic Red Team data at build time. Hunt packs are arrays of strings (Splunk SPL, VQL, PowerShell).",
+  "techniques": {
+    "T1566.001": {
+      "tactic": "TA0002",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1\n  Image=\"*\\\\WINWORD.EXE\" OR Image=\"*\\\\EXCEL.EXE\"\n| where match(CommandLine, \"(?i)(cmd|powershell|wscript|cscript)\")\n| table _time, Computer, User, Image, CommandLine",
+          "index=sysmon EventCode=1\n  ParentImage IN (\"*\\\\WINWORD.EXE\",\"*\\\\EXCEL.EXE\",\"*\\\\OUTLOOK.EXE\")\n  Image IN (\"*\\\\cmd.exe\",\"*\\\\powershell.exe\",\"*\\\\wscript.exe\",\"*\\\\mshta.exe\")\n| table _time, Computer, User, ParentImage, Image, CommandLine"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.EventLogs.EvtxHunter(\n  EvtxGlob=\"**\\\\*.evtx\", IdRegex=\"4688\")\nWHERE NewProcessName =~ \"(?i)(WINWORD|EXCEL|OUTLOOK).EXE\"",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE ParentName =~ \"(?i)(WINWORD|EXCEL|OUTLOOK).EXE\"\n  AND Name =~ \"(?i)(cmd|powershell|wscript|cscript).exe\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=1} |\n  Where-Object { $_.Message -match 'WINWORD.EXE|EXCEL.EXE' -and\n    $_.Message -match 'powershell|cmd|wscript' } |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-ChildItem \"$env:APPDATA\\Microsoft\\Office\\Recent\\\" |\n  Sort-Object LastWriteTime -Descending |\n  Select-Object -First 20 FullName, LastWriteTime"
+        ]
+      }
+    },
+    "T1059.001": {
+      "tactic": "TA0002",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1 Image=\"*\\\\powershell.exe\"\n| eval encoded=if(match(CommandLine,\"(?i)-e(nc(odedcommand)?)? \"),\"YES\",\"NO\")\n| table _time, Computer, User, CommandLine, encoded\n| sort - encoded",
+          "index=wineventlog source=\"WinEventLog:Microsoft-Windows-PowerShell/Operational\" EventCode=4104\n  Message IN (\"*Invoke-Expression*\",\"*DownloadString*\",\"*EncodedCommand*\",\"*AmsiScanBuffer*\")\n| rex field=Message \"ScriptBlock text = (?P<script>.+?)\\n\"\n| table _time, Computer, User, script"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.EventLogs.PowerShell.ScriptBlock()\nWHERE Script =~ \"(?i)(invoke-expression|iex|downloadstring|encodedcommand|amsiscan|reflection.assembly)\"",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE Name =~ \"powershell.exe\"\n  AND CommandLine =~ \"(?i)(-enc|-e |encodedcommand|-nop|-noni|bypass)\""
+        ],
+        "powershell": [
+          "Get-WinEvent -LogName 'Microsoft-Windows-PowerShell/Operational' |\n  Where-Object { $_.Id -eq 4104 -and\n    $_.Message -match 'EncodedCommand|DownloadString|Invoke-Expression|AmsiScan' } |\n  Select-Object TimeCreated, @{N='Script';E={$_.Message -replace '.*ScriptBlock text = ',''\n    -replace '\\n.*',''}} | Format-List",
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} |\n  Where-Object {$_.Message -match 'powershell.exe.{0,100}-e'} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1059.003": {
+      "tactic": "TA0002",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1\n  ParentImage IN (\"*\\\\winword.exe\",\"*\\\\excel.exe\",\"*\\\\outlook.exe\")\n  Image=\"*\\\\cmd.exe\"\n| table _time, Computer, User, ParentImage, CommandLine",
+          "index=sysmon EventCode=1 Image=\"*\\\\cmd.exe\"\n| stats count by Computer, User, ParentImage\n| where count > 10\n| sort - count"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE Name =~ \"cmd.exe\"\n  AND ParentName =~ \"(?i)(WINWORD|EXCEL|OUTLOOK|mshta|wscript).exe\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} |\n  Where-Object {$_.Message -match 'cmd.exe' -and\n    $_.Message -match 'WINWORD.EXE|EXCEL.EXE|OUTLOOK.EXE'} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1547.001": {
+      "tactic": "TA0003",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=13\n  TargetObject IN (\"*\\\\CurrentVersion\\\\Run\\\\*\",\"*\\\\CurrentVersion\\\\RunOnce\\\\*\")\n| table _time, Computer, User, TargetObject, Details, Image",
+          "index=sysmon EventCode=11\n  TargetFilename=\"*\\\\Start Menu\\\\Programs\\\\Startup\\\\*\"\n| table _time, Computer, User, TargetFilename, Image"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Sys.StartupItems()",
+          "SELECT * FROM Artifact.Windows.Registry.NTUser(\n  KeyGlob=\"SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run**\")"
+        ],
+        "powershell": [
+          "Get-ItemProperty \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" | Format-List\nGet-ItemProperty \"HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" | Format-List",
+          "Get-ChildItem \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\\" |\n  Select-Object FullName, LastWriteTime, Length"
+        ]
+      }
+    },
+    "T1053.005": {
+      "tactic": "TA0003",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1 Image=\"*\\\\schtasks.exe\" CommandLine=\"*/create*\"\n| table _time, Computer, User, CommandLine",
+          "index=wineventlog EventCode IN (4698, 4702)\n| rex field=Message \"Task Name:\\\\s+(?P<task>[^\\\\n]+)\"\n| table _time, ComputerName, EventCode, task, Message"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.System.ScheduledTasks()\nWHERE Enabled = \"true\"\n  AND (Command =~ \"(?i)(powershell|cmd|wscript|mshta|rundll32)\"\n    OR WorkingDirectory =~ \"(?i)(temp|appdata|public)\")"
+        ],
+        "powershell": [
+          "Get-ScheduledTask | Where-Object {$_.State -ne 'Disabled'} |\n  Select-Object TaskName, TaskPath, State,\n    @{N='Execute';E={$_.Actions.Execute}},\n    @{N='Trigger';E={$_.Triggers.CimClass.CimClassName}} |\n  Format-List",
+          "Get-WinEvent -LogName 'Microsoft-Windows-TaskScheduler/Operational' |\n  Where-Object {$_.Id -in @(106,129,200)} |\n  Select-Object TimeCreated, Id, Message | Format-List"
+        ]
+      }
+    },
+    "T1543.003": {
+      "tactic": "TA0003",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1 Image=\"*\\\\sc.exe\" CommandLine=\"*create*\"\n| table _time, Computer, User, CommandLine",
+          "index=wineventlog EventCode=7045\n| table _time, ComputerName, Message\n| rex field=Message \"Service Name:\\\\s+(?P<svc>[^\\\\n]+)\"\n| rex field=Message \"Service File Name:\\\\s+(?P<path>[^\\\\n]+)\""
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.System.Services()\nWHERE StartMode = \"auto\"\n  AND (PathName =~ \"(?i)(temp|appdata|users\\\\public)\"\n    OR NOT PathName =~ \"(?i)(windows|program files)\")"
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='System'; Id=7045} |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-Service | Where-Object {$_.Status -eq 'Running'} |\n  ForEach-Object { $svc = $_\n    $bin = (Get-WmiObject Win32_Service -Filter \"Name='$($svc.Name)'\").PathName\n    [PSCustomObject]@{Name=$svc.Name; Binary=$bin} } |\n  Where-Object {$_.Binary -match 'temp|appdata|public'} | Format-List"
+        ]
+      }
+    },
+    "T1548.002": {
+      "tactic": "TA0004",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=13\n  TargetObject IN (\"*\\\\ms-settings\\\\shell\\\\open\\\\command*\",\"*\\\\mscfile\\\\shell\\\\open\\\\command*\")\n| table _time, Computer, User, Image, TargetObject, Details",
+          "index=sysmon EventCode=1\n  Image IN (\"*\\\\eventvwr.exe\",\"*\\\\fodhelper.exe\")\n  IntegrityLevel=\"High\"\n| table _time, Computer, User, Image, ParentImage, CommandLine"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Registry.NTUser(\n  KeyGlob=\"SOFTWARE\\\\Classes\\\\ms-settings\\\\shell\\\\open\\\\command**\")",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE Name =~ \"(?i)(eventvwr|fodhelper|sdclt|cmstp).exe\""
+        ],
+        "powershell": [
+          "Get-ItemProperty \"HKCU:\\Software\\Classes\\ms-settings\\shell\\open\\command\" -EA SilentlyContinue | Format-List\nGet-ItemProperty \"HKCU:\\Software\\Classes\\mscfile\\shell\\open\\command\" -EA SilentlyContinue | Format-List",
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} |\n  Where-Object {$_.Message -match '(eventvwr|fodhelper|sdclt).exe'} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1070.001": {
+      "tactic": "TA0005",
+      "huntPack": {
+        "splunk": [
+          "index=wineventlog EventCode=1102 OR EventCode=104\n| table _time, ComputerName, EventCode, Message",
+          "index=sysmon EventCode=1\n  Image=\"*\\\\wevtutil.exe\" CommandLine IN (\"*cl *\",\"*clear-log*\")\n| table _time, Computer, User, CommandLine"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.EventLogs.EvtxHunter(\n  EvtxGlob=\"**\\\\Security.evtx\", IdRegex=\"1102\")",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE CommandLine =~ \"(?i)wevtutil.*(cl |clear-log)\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=1102} |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-WinEvent -FilterHashtable @{LogName='System'; Id=104} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1055.001": {
+      "tactic": "TA0005",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=8\n| table _time, Computer, SourceImage, TargetImage, StartAddress, StartFunction",
+          "index=sysmon EventCode=1 Image=\"*\\\\mavinject.exe\"\n| table _time, Computer, User, CommandLine"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Memory.InjectedThreads()",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE CommandLine =~ \"(?i)mavinject\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=8} |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-Process | ForEach-Object {\n  $p = $_\n  try { $p.Modules |\n    Where-Object {$_.FileName -notmatch '(?i)(system32|syswow64|program files)'} |\n    Select-Object @{N='Process';E={$p.Name}},@{N='PID';E={$p.Id}},FileName\n  } catch {}\n} | Format-List"
+        ]
+      }
+    },
+    "T1003.001": {
+      "tactic": "TA0006",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=10 TargetImage=\"*\\\\lsass.exe\"\n  GrantedAccess IN (\"0x1010\",\"0x1038\",\"0x1410\",\"0x40\",\"0x1FFFFF\")\n| table _time, Computer, SourceImage, TargetImage, GrantedAccess, User",
+          "index=sysmon EventCode=1\n  Image IN (\"*\\\\procdump.exe\",\"*\\\\procdump64.exe\") CommandLine=\"*lsass*\"\n| table _time, Computer, User, CommandLine"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Memory.ProcessHandles(\n  ProcessRegex=\"lsass\")\nWHERE GrantedAccess =~ \"(0x1010|0x1038|0x1410|0x1FFFFF)\"",
+          "SELECT * FROM Artifact.Windows.Detection.Yara.Process(\n  ProcessRegex=\"lsass\",\n  YaraRule=\"rule mimikatz { strings: $a = \"mimikatz\" nocase condition: $a }\")"
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=10} |\n  Where-Object {$_.Message -match 'lsass.exe'} |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4656} |\n  Where-Object {$_.Message -match 'lsass.exe'} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1558.003": {
+      "tactic": "TA0006",
+      "huntPack": {
+        "splunk": [
+          "index=wineventlog EventCode=4769\n  TicketEncryptionType=\"0x17\" TicketOptions=\"0x40810000\"\n| stats count by TargetUserName, ServiceName, ClientAddress\n| sort - count",
+          "index=wineventlog EventCode=4769 TicketEncryptionType=\"0x17\"\n| where ServiceName!=\"krbtgt\" AND NOT ServiceName=\"*$\"\n| table _time, ComputerName, TargetUserName, ServiceName, ClientAddress"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.EventLogs.EvtxHunter(\n  EvtxGlob=\"**\\\\Security.evtx\", IdRegex=\"4769\")\nWHERE TicketEncryptionType = \"0x17\"\n  AND NOT ServiceName =~ \"(krbtgt|\\\\$)\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4769} |\n  Where-Object {$_.Message -match 'Ticket Encryption Type:\\s+0x17'} |\n  Select-Object TimeCreated, Message | Format-List",
+          "# Identify kerberoastable accounts (run on DC)\nGet-ADUser -Filter {ServicePrincipalName -ne \"$null\" -and Enabled -eq $true} |\n  Select-Object Name, SamAccountName, ServicePrincipalName | Format-Table"
+        ]
+      }
+    },
+    "T1082": {
+      "tactic": "TA0007",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1\n  Image IN (\"*\\\\systeminfo.exe\",\"*\\\\wmic.exe\",\"*\\\\msinfo32.exe\")\n| table _time, Computer, User, Image, CommandLine, ParentImage"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Generic.System.Info()",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE Name =~ \"(?i)(systeminfo|wmic|msinfo32).exe\""
+        ],
+        "powershell": [
+          "Get-ComputerInfo | Select-Object WindowsProductName, OsVersion, CsName,\n  CsDomain, CsManufacturer, BiosVersion | Format-List",
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} |\n  Where-Object {$_.Message -match '(systeminfo|wmic).exe'} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1016": {
+      "tactic": "TA0007",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1\n  Image IN (\"*\\\\ipconfig.exe\",\"*\\\\netstat.exe\",\"*\\\\arp.exe\",\"*\\\\net.exe\",\"*\\\\nslookup.exe\")\n| table _time, Computer, User, Image, CommandLine, ParentImage"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Network.Netstat()\nWHERE Status = \"ESTABLISHED\"",
+          "SELECT * FROM Artifact.Windows.Network.ArpCache()"
+        ],
+        "powershell": [
+          "Get-NetIPConfiguration | Select-Object InterfaceAlias, IPv4Address, IPv4DefaultGateway, DNSServer | Format-List",
+          "Get-NetTCPConnection | Where-Object {$_.State -eq 'Established'} |\n  ForEach-Object { $proc = Get-Process -Id $_.OwningProcess -EA SilentlyContinue\n    [PSCustomObject]@{ Process=$proc.Name; PID=$_.OwningProcess\n      Remote=\"$($_.RemoteAddress):$($_.RemotePort)\" } } | Format-Table"
+        ]
+      }
+    },
+    "T1069.002": {
+      "tactic": "TA0007",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1\n  Image=\"*\\\\net.exe\" CommandLine IN (\"*group*\",\"*localgroup*\")\n| table _time, Computer, User, CommandLine",
+          "index=wineventlog EventCode IN (4798, 4799)\n| table _time, ComputerName, SubjectUserName, TargetUserName, Message"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE CommandLine =~ \"(?i)net.*(group|localgroup).*(domain admins|enterprise admins|administrators)\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4798} |\n  Select-Object TimeCreated, Message | Format-List",
+          "# Enumerate high-value groups (run as analyst on domain system)\nGet-ADGroupMember \"Domain Admins\" -Recursive |\n  Select-Object Name, SamAccountName, ObjectClass | Format-Table"
+        ]
+      }
+    },
+    "T1021.001": {
+      "tactic": "TA0008",
+      "huntPack": {
+        "splunk": [
+          "index=wineventlog EventCode=4624 LogonType=10\n| table _time, ComputerName, TargetUserName, IpAddress, LogonType",
+          "index=wineventlog EventCode=4778\n| table _time, ComputerName, AccountName, ClientName, ClientAddress"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.EventLogs.EvtxHunter(\n  EvtxGlob=\"**\\\\Security.evtx\", IdRegex=\"4624\")\nWHERE LogonType = \"10\"",
+          "SELECT * FROM Artifact.Windows.Network.Netstat()\nWHERE RemotePort = \"3389\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4624} |\n  Where-Object {$_.Message -match 'Logon Type:\\s+10'} |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-WinEvent -LogName 'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational' |\n  Where-Object {$_.Id -eq 1149} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1021.002": {
+      "tactic": "TA0008",
+      "huntPack": {
+        "splunk": [
+          "index=wineventlog EventCode=5140\n  ShareName IN (\"*\\\\ADMIN$\",\"*\\\\C$\",\"*\\\\IPC$\")\n| table _time, ComputerName, SubjectUserName, ShareName, IpAddress",
+          "index=wineventlog EventCode=7045\n| rex field=Message \"Service Name:\\\\s+(?P<svc>[^\\\\n]+)\"\n| table _time, ComputerName, svc, Message"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.EventLogs.EvtxHunter(\n  EvtxGlob=\"**\\\\Security.evtx\", IdRegex=\"5140\")\nWHERE ShareName =~ \"(ADMIN|C)\\\\$\"",
+          "SELECT * FROM Artifact.Windows.System.Services()\nWHERE StartMode = \"Manual\" AND State = \"Running\""
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=5140} |\n  Where-Object {$_.Message -match 'ADMIN\\$|C\\$'} |\n  Select-Object TimeCreated, Message | Format-List",
+          "Get-SmbOpenFile | Select-Object ClientComputerName, ClientUserName, Path | Format-Table"
+        ]
+      }
+    },
+    "T1071.001": {
+      "tactic": "TA0011",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=3\n  DestinationPort IN (80, 443, 8080, 8443)\n  Image!=\"*\\\\chrome.exe\" Image!=\"*\\\\firefox.exe\" Image!=\"*\\\\msedge.exe\"\n| stats count, dc(DestinationIp) as uniq_ips, avg(DestinationPort) as avg_port\n    by Image, Computer\n| sort - count",
+          "index=proxy sourcetype=web_traffic\n| stats count, stdev(bytes) as jitter, avg(bytes) as avg_bytes\n    by src_ip, dest_ip, dest_port\n| where jitter < 200 AND count > 30\n| sort - count"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Network.Netstat()\nWHERE RemotePort IN (\"80\",\"443\",\"8080\",\"8443\")\n  AND NOT Process =~ \"(?i)(chrome|firefox|edge|svchost|MicrosoftEdge).exe\"",
+          "SELECT * FROM Artifact.Windows.System.DNSCache()\nWHERE NOT Answer =~ \"(?i)(microsoft|windows|google|akamai|cloudflare|cdn)\""
+        ],
+        "powershell": [
+          "Get-NetTCPConnection -State Established |\n  Where-Object {$_.RemotePort -in @(80,443,8080,8443)} |\n  ForEach-Object { $proc = Get-Process -Id $_.OwningProcess -EA SilentlyContinue\n    [PSCustomObject]@{ Process=$proc.Name; PID=$_.OwningProcess\n      Remote=\"$($_.RemoteAddress):$($_.RemotePort)\" } } |\n  Where-Object {$_.Process -notmatch '(?i)(chrome|firefox|edge|svchost)'} | Format-Table",
+          "Get-DnsClientCache |\n  Where-Object {$_.Data -notmatch '(?i)(microsoft|windows|google|akamai|cloudflare)'} |\n  Select-Object Name, Data, TimeToLive | Format-Table"
+        ]
+      }
+    },
+    "T1048.003": {
+      "tactic": "TA0010",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=3 DestinationPort IN (20, 21, 69)\n| table _time, Computer, User, Image, DestinationIp, DestinationPort",
+          "index=sysmon EventCode=1\n  Image=\"*\\\\certutil.exe\" CommandLine IN (\"*-encode*\",\"*-decode*\",\"*-urlcache*\")\n| table _time, Computer, User, CommandLine"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Network.Netstat()\nWHERE RemotePort IN (\"20\",\"21\",\"69\")",
+          "SELECT * FROM Artifact.Windows.System.Pslist()\nWHERE CommandLine =~ \"(?i)certutil.*(encode|decode|urlcache)\""
+        ],
+        "powershell": [
+          "Get-NetTCPConnection |\n  Where-Object {$_.RemotePort -in @(20,21)} |\n  ForEach-Object { $proc = Get-Process -Id $_.OwningProcess -EA SilentlyContinue\n    [PSCustomObject]@{Process=$proc.Name; RemoteIP=$_.RemoteAddress} } | Format-Table",
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} |\n  Where-Object {$_.Message -match 'certutil.*(encode|urlcache)'} |\n  Select-Object TimeCreated, Message | Format-List"
+        ]
+      }
+    },
+    "T1486": {
+      "tactic": "TA0040",
+      "huntPack": {
+        "splunk": [
+          "index=sysmon EventCode=1\n  Image IN (\"*\\\\vssadmin.exe\",\"*\\\\bcdedit.exe\",\"*\\\\wbadmin.exe\")\n  CommandLine IN (\"*delete*shadows*\",\"*recoveryenabled*\",\"*delete*catalog*\")\n| table _time, Computer, User, Image, CommandLine",
+          "index=sysmon EventCode=11\n| stats count by Computer, Image\n| where count > 500\n| sort - count"
+        ],
+        "vql": [
+          "SELECT * FROM Artifact.Windows.Forensics.Prefetch()\nWHERE Executable =~ \"(?i)(vssadmin|bcdedit|wbadmin|cipher)\"\n  AND Arguments =~ \"(?i)(delete|recoveryenabled|catalog)\"",
+          "SELECT count(FullPath) as total, split(FullPath,\".\")[-1] as ext\nFROM glob(globs=\"C:\\\\Users\\\\**\\\\*\")\nGROUP BY ext\nORDER BY total DESC LIMIT 30"
+        ],
+        "powershell": [
+          "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688} |\n  Where-Object {$_.Message -match 'vssadmin.*delete|bcdedit.*recoveryenabled|wbadmin.*delete'} |\n  Select-Object TimeCreated, Message | Format-List",
+          "# Look for mass file modification events\nGet-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=2} |\n  Group-Object { $_.TimeCreated.ToString(\"HH:mm\") } |\n  Sort-Object Count -Descending | Select-Object -First 10 Name, Count | Format-Table"
+        ]
+      }
+    }
+  }
+}
