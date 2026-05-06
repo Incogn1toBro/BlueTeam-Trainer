@@ -310,14 +310,52 @@ VICTIM_USER=atomicuser
 VICTIM_PASS=<the password you'll set in Phase 3>
 ```
 
-You don't have the Victim VM yet — that's Phase 3. Use planned values; you can update the .env file if anything changes.
+You don't have the Victim VM yet — thatis Phase 3. Use planned values; you can update the .env file if anything changes.
 
-## 2.4 Revoke internet access
+## 2.4 Build the platform
+
+The HTML you will see in the browser is generated from two sources:
+
+1. The **JSX source** in `blueteam-trainer.jsx` (UI logic)
+2. The **technique library** at `data/techniques.json` (all 330+ ATT&CK techniques pulled from upstream Atomic Red Team, plus hand curated hunt packs)
+
+A single command builds both:
+
+```bash
+sudo ./build.sh
+```
+
+The first run takes a couple of minutes as it clones `redcanaryco/atomic-red-team` into `.cache/` and pulls the current MITRE ATT&CK tactic mapping. Subsequent runs are seconds. You should see output like:
+
+```
+▌ 1/3  Importing upstream Atomic Red Team data
+   Cloning atomic-red-team into .cache/atomic-red-team ...
+   Fetching MITRE ATT&CK technique → tactic mapping...
+   ✓ Wrote data/atomics-generated.json
+     331 techniques, 1790 tests
+▌ 2/3  Merging curation overlay
+   Loaded 331 upstream techniques and 18 curated overlays
+   ✓ Wrote data/techniques.json
+▌ 3/3  Building standalone HTML
+   ✓ Embedded 331 techniques (18 curated)
+   ✓ Wrote blueteam-trainer.html (865.2 KB)
+▌ Build complete
+```
+
+Common variations:
+
+```bash
+./build.sh --offline    # skip 'git pull' (use existing cached checkout)
+./build.sh --html-only  # rebuild HTML only, skip data refresh (faster)
+```
+
+You will only need to run the full build once on first install and again whenever you want to refresh the technique library from upstream (quarterly is plenty).
+
+## 2.5 Revoke internet access
 
 Revoke the virtual machine's internet access so it is only utilising its host-only IP address
 
 > ⚠️ **Don't launch the platform yet.** Continue to Phase 3 first.
-
 
 ✅ **Phase 2 complete.** Analyst VM is ready, waiting on the Victim.
 
