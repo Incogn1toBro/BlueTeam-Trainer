@@ -109,6 +109,9 @@ fi
 source "$VENV_DIR/bin/activate"
 pip install --quiet --upgrade pip
 pip install --quiet -r "$SCRIPT_DIR/backend/requirements.txt"
+if [[ -f "$SCRIPT_DIR/tools/requirements.txt" ]]; then
+    pip install --quiet -r "$SCRIPT_DIR/tools/requirements.txt"
+fi
 ok "Python dependencies installed"
 deactivate
 
