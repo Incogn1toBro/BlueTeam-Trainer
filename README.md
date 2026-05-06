@@ -49,13 +49,23 @@ blueteam-trainer/
 ├── BUILD.md                          ← Start here. Full build guide.
 ├── README.md                         ← This file
 │
-├── blueteam-trainer.html             ← The frontend (single-file HTML build)
-├── blueteam-trainer.jsx              ← Frontend source for customisation
+├── blueteam-trainer.html             ← The frontend (built — do not edit)
+├── blueteam-trainer.jsx              ← Frontend source
 │
+├── build.sh                          ← Top-level: import + merge + build HTML
+├── build-html.py                     ← HTML-only build (faster for UI work)
 ├── setup-ubuntu.sh                   ← Ubuntu Analyst VM one-shot setup
-├── run-all.sh                        ← Combined backend + frontend launcher (tmux)
+├── run-all.sh                        ← Backend + frontend launcher (tmux)
 ├── fetch-vendor.{sh,ps1}             ← Download React/Babel for offline use
 ├── start-trainer.{sh,ps1}            ← Frontend-only launcher (alternative)
+│
+├── tools/                            ← Build-time tooling
+│   ├── import-atomics.py             ← Pulls upstream atomic-red-team
+│   ├── build-techniques.py           ← Merges upstream + curation overlay
+│   └── requirements.txt              ← Python deps for the importer
+│
+├── data/
+│   └── curation.json                 ← Hand-maintained hunt packs (committed)    
 │
 ├── backend/
 │   ├── main.py                       ← FastAPI orchestrator
