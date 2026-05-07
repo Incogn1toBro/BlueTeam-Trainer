@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Build blueteam-trainer.html from blueteam-trainer.jsx + data/techniques.json.
+Build blueteam-trainer.html from blueteam-trainer.jsx + styles.css + data/techniques.json.
 
-Two inputs are merged into one self-contained HTML:
+Three inputs are merged into one self-contained HTML:
   1. The JSX source (UI logic and component code)
-  2. The techniques data (full Atomic Red Team library + curated overlay)
+  2. The CSS stylesheet (design system)
+  3. The techniques data (full Atomic Red Team library + curated overlay)
 
 The data is embedded as window.__BTT_TECHNIQUES__ so the JSX can read it
 without a runtime fetch — keeps the platform fully offline-capable.
@@ -30,14 +31,10 @@ from pathlib import Path
 
 base = Path(__file__).resolve().parent
 jsx_path = base / "blueteam-trainer.jsx"
+css_path = base / "styles.css"
 out_path = base / "blueteam-trainer.html"
 data_path = base / "data" / "techniques.json"
 vite_copy = base / "vite-project" / "src" / "BlueTeamTrainer.jsx"
-
-
-# ---------------------------------------------------------------------------
-# Build
-# ---------------------------------------------------------------------------
 
 
 def main() -> int:
@@ -55,10 +52,15 @@ def main() -> int:
 
     src = jsx_path.read_text(encoding="utf-8")
 
-    # Replace the React import line with a destructuring assignment from
-    # window.React. Babel Standalone runs in the browser and React is loaded
-    # via the UMD bundle, not as an ES module — so the `import` syntax does
-    # not apply here.
+    # ---------- CSS ----------
+    if css_path.exists():
+        css_content = css_path.read_text(encoding="utf-8")
+        print(f"  ✓ Embedded styles.css ({len(css_content):,} bytes)")
+    else:
+        css_content = "/* styles.css not found — UI will be unstyled */"
+        print(f"  ⚠ {css_path.relative_to(base)} not found — embedding placeholder")
+
+    # ---------- React import ----------
     src = re.sub(
         r'^import\s+(?:React,\s*)?\{[^}]*\}\s+from\s+"react";\s*$',
         "const { useState, useCallback, useRef, useEffect, useMemo } = React;",
@@ -67,16 +69,12 @@ def main() -> int:
         flags=re.MULTILINE,
     )
 
-    # Convert `export default function` to a plain function declaration so we
-    # can render it directly with React.createElement at the bottom of the HTML.
     src = src.replace(
         "export default function BlueTeamTrainer()",
         "function BlueTeamTrainer()",
     )
 
-    # Embed techniques.json as window.__BTT_TECHNIQUES__ if available.
-    # Falls back to an empty array if --no-data or the file is missing,
-    # which lets the UI render an empty-state without crashing.
+    # ---------- techniques.json ----------
     if args.no_data:
         techniques_payload = {"_meta": {"merged_total": 0}, "techniques": []}
         print("  ⚠ Skipping data embed (--no-data)")
@@ -94,8 +92,6 @@ def main() -> int:
             "    Run tools/import-atomics.py + tools/build-techniques.py first."
         )
 
-    # Serialise to a compact JSON literal. We escape `</script>` defensively
-    # so the embedded blob can never break out of the surrounding script tag.
     techniques_json = json.dumps(techniques_payload, separators=(",", ":"))
     techniques_json = techniques_json.replace("</", "<\\/")
 
@@ -107,30 +103,23 @@ def main() -> int:
   <title>Blue Team Trainer</title>
   <!--
     THIS FILE IS GENERATED. Do not edit by hand.
-    Source: blueteam-trainer.jsx + data/techniques.json
+    Source: blueteam-trainer.jsx + styles.css + data/techniques.json
     Regenerate with: ./build.sh   (or just ./build-html.sh for UI-only changes)
   -->
   <style>
-    html, body, #root { margin: 0; padding: 0; height: 100%; width: 100%; background: #0d1117; overflow: hidden; }
-    body { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace; color: #e6edf3; }
-    #boot-screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #0d1117; color: #00d97e; font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 1.5px; }
-    #boot-screen .spinner { width: 36px; height: 36px; border: 2px solid rgba(0, 217, 126, 0.18); border-top-color: #00d97e; border-radius: 50%; animation: spin 0.8s linear infinite; }
-    #boot-error { max-width: 640px; padding: 20px 24px; background: rgba(248, 81, 73, 0.08); border: 1px solid rgba(248, 81, 73, 0.4); border-radius: 8px; color: #f85149; font-size: 12px; line-height: 1.6; display: none; text-align: left; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+__STYLES__
   </style>
 </head>
 <body>
-  <div id="boot-screen">
-    <div class="spinner"></div>
-    <div>INITIALISING BLUE TEAM TRAINER</div>
-    <div id="boot-error"></div>
+  <div id="boot-screen" class="boot-screen">
+    <div class="boot-screen-name">BLUE TEAM TRAINER<span class="boot-cursor"></span></div>
+    <div class="boot-screen-status">INITIALISING…</div>
+    <div id="boot-error" class="boot-error"></div>
   </div>
   <div id="root"></div>
 
   <script>
-    // Embedded technique library — all 330+ techniques, ~1700 atomic tests.
-    // The JSX reads this via window.__BTT_TECHNIQUES__ so the platform stays
-    // fully offline-capable.
+    // Embedded technique library — full Atomic Red Team + curated overlay.
     window.__BTT_TECHNIQUES__ = __TECHNIQUES_JSON__;
   </script>
 
@@ -162,21 +151,20 @@ __COMPONENT_BODY__
 </html>
 """
 
-    html = template.replace("__TECHNIQUES_JSON__", techniques_json)
+    html = template.replace("__STYLES__", css_content)
+    html = html.replace("__TECHNIQUES_JSON__", techniques_json)
     html = html.replace("__COMPONENT_BODY__", src)
     out_path.write_text(html, encoding="utf-8")
 
     size_kb = out_path.stat().st_size / 1024
     print(f"  ✓ Wrote {out_path.name} ({size_kb:,.1f} KB)")
 
-    # Sync the Vite project copy too, so contributors who edit the top-level
-    # JSX do not end up with a stale Vite copy.
     if vite_copy.exists():
         vite_copy.write_text(jsx_path.read_text(encoding="utf-8"), encoding="utf-8")
         print(f"  ✓ Synced {vite_copy.relative_to(base)}")
 
     print("")
-    print("Done. Commit blueteam-trainer.jsx AND blueteam-trainer.html together.")
+    print("Done. Commit blueteam-trainer.jsx, styles.css AND blueteam-trainer.html together.")
     print("data/techniques.json is .gitignore'd — regenerate locally via ./build.sh.")
     return 0
 
